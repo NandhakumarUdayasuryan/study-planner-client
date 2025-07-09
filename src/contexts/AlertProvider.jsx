@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import PropTypes from "prop-types";
-import { AlertContext } from "./alertContext";
+import { AlertContext } from "./AlertContext";
 
 export function AlertProvider({ children }) {
     const [alertMessage, setAlertMessage] = useState({message: "", type: "info"});

@@ -1,18 +1,29 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useContext } from "react";
+import { useNavigate } from "react-router-dom";
+import { AlertContext } from "../contexts/AlertContext.jsx";
 import reactIcon from "../assets/react.svg";
 import viteIcon from "../assets/vite.svg";
 import studyPlannerLogo from "../assets/study-planner-logo.png";
+import axios from "axios";
+import {APIEndpoints} from "../utils/Constants.js"; 
 
 const Setting = () => {
-    const restartTasks = () => {
-        if (
-            window.confirm(
-                "Are you sure you want to restart all tasks? This action cannot be undone."
-            )
-        ) {
-            localStorage.removeItem("all-tasks");
+    const navigate = useNavigate();
+    const { setAlertMessage } = useContext(AlertContext);
+    const logout = async () => {
+        try {
+            await axios.post(APIEndpoints.LOGOUT, {}, { withCredentials: true });
+            
+            setAlertMessage({message:`Logout successfully!`, type: "success"});
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('authUser');
+            navigate('/user');
+        } catch {
+            setAlertMessage({message:`Not Able to logout!`, type: "error"});
         }
-    };
+        
+    }
+
     const [userDetails, setUserDetails] = useState(
         JSON.parse(localStorage.getItem("user-details")) || {
             name: "",
@@ -47,9 +58,17 @@ const Setting = () => {
             <p className="mb-4 text-gray-400 pl-8 pt-2">
                 Manage your tasks and application settings here.
             </p>
-            <h2 className="text-xl font-semibold mb-4 mt-8">User Details</h2>
+            <h2 className="text-xl font-semibold mb-4 mt-8">User Details{''}
+                <button
+                    onClick={logout}
+                    className="bg-red-800 float-right text-white px-4 py-2 rounded hover:bg-red-700 cursor-pointer transition-colors duration-300"
+                    title="Logout"
+                    aria-label="Logout"
+                >
+                    Logout
+                </button></h2>
             <p className="text-gray-300 pl-8 mb-4">
-                Update your user details to personalize your experience.
+                Update your user details to personalize your experience. 
             </p>
 
             <div className="mb-4 text-gray-200 pl-8 ">
@@ -120,21 +139,7 @@ const Setting = () => {
                     )}
                 </div>
             </div>
-            <h2 className="text-xl font-semibold mb-4 mt-8">Restart Tasks</h2>
-            <div className="pl-8">
-                <button
-                    onClick={restartTasks}
-                    className="bg-red-800 text-white px-4 py-2 rounded hover:bg-red-700 cursor-pointer transition-colors duration-300"
-                    title="Restart all tasks"
-                    aria-label="Restart all tasks"
-                >
-                    Restart
-                </button>
-                <p className="mb-4 pl-1 text-gray-400 text-xs italic pt-1">
-                    Note: Restarting tasks will clear all your current tasks.
-                    Please proceed with caution.
-                </p>
-            </div>
+                
             <div className="mt-8">
                 <h2 className="text-xl font-semibold mb-4">About</h2>
                 <p className="text-gray-300 pl-8 inline-block">
@@ -145,7 +150,7 @@ const Setting = () => {
                 
                 <img
                     src={viteIcon}
-                    className="p-2 ml-6 ml-2 inline"
+                    className="p-2 ml-2 inline"
                     alt="Vite"
                 />
                 <span className="text-xl pl-2">+</span>

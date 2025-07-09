@@ -22,13 +22,26 @@
 ### 1. Clone the repository 
 git clone https://github.com/NandhakumarUdayasuryan/study-planner.git
 cd study-planner
-# Install dependencies
+
+> **Note:** Clone the server repository and set it up before running the client application.
+	git clone https://github.com/NandhakumarUdayasuryan/study-planner-server.git
+	cd study-planner-server
+	See README.md file to more instructions... then update the BaseURL url in the Constants.jsx file
+
+### 2. Install dependencies
+
+- Run the following command in the project directory to install all required packages:
+
+```bash
 npm install
+```
 
 - App will run at http://localhost:3000 or 5173 depending on the tool.
 
+```bash
 npm run dev
-
+```
+- folder structure
 
 ```
 src/
@@ -42,8 +55,8 @@ src/
 	├── TaskCard.jsx
 ├── contexts/
 	├── AlertContext.jsx
-	├── AlertProvider.jsx
-├── utils/-nofiles-
+├── utils/
+	├── Constants.jsx
 ├── App.jsx
 ├── App.css
 ├── main.jsx

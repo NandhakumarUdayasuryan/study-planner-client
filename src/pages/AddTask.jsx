@@ -1,12 +1,27 @@
-import React, { useState, useContext } from "react";
+import React, { useContext, useReducer } from "react";
+import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
-import { AlertContext } from "../contexts/alertContext";
+import { AlertContext } from "../contexts/AlertContext.jsx";
+import { APIEndpoints } from "../utils/Constants.js"
+import formReducer from "../utils/formReducer.js";
 
 const AddTask = () => {
-    const [task, setTask] = useState("");
-    const [dueDate, setDueDate] = useState("");
-    const [priority, setPriority] = useState("");
-    const [action, setAction] = useState("");
+    const initialState = {
+        title: '',
+        dueDate: '',
+        priority: '',
+        action: ''
+    };
+    const [formState, dispatch] = useReducer(formReducer, initialState);
+
+    const handleChange = (e) => {
+        dispatch({
+        type: 'UPDATE_FIELD',
+        field: e.target.name,
+        value: e.target.value,
+        });
+    };
+    
     const { setAlertMessage } = useContext(AlertContext);
 
     const navigate = useNavigate();
@@ -14,48 +29,49 @@ const AddTask = () => {
     const addTask = (newTask) => {
         // This function would typically send the new task to your backend or state management
         console.log("Task added:", newTask);
-        const allTasks = localStorage.getItem("all-tasks");
-        const updatedTasks = allTasks
-            ? [...JSON.parse(allTasks), newTask]
-            : [newTask];
-        // Save the updated tasks back to localStorage
-        localStorage.setItem("all-tasks", JSON.stringify(updatedTasks));
+        // Post the tasks
+        axios.post(APIEndpoints.TASKS, newTask)
+        .then(response => {
+            console.log("Task posted to backend:", response.data);
+            // Here you would typically send the new task to your backend or state management
+            resetTaskForm();
+            if (formReducer.action === "move") {
+                // Redirect to another page
+                navigate("/");
+                setAlertMessage({message:`Task(${formState.title})added successfully!`, type: "success"});
+            } else if (formReducer.action === "stay") {
+                setAlertMessage({message:`Task(${formState.title})added successfully! You can continue adding more tasks.`, type: "success"});
+            }
+        })
+        .catch(error => {
+            console.error("Error posting task:", error);
+            setAlertMessage({message: "Failed to add task to server.", type: "error"});
+        });
     };
     const resetTaskForm = () => {
         // For now, we'll just reset the form
-        setTask("");
-        setDueDate("");
-        setPriority("");
+        dispatch({ type: 'RESET', initialState });
     };
 
     const handleSubmit = (e) => {
-        console.log("Form action:", action);
+        console.log("formState:", formState);
         e.preventDefault(); // prevent page reload
-        if (!task || !dueDate || !priority) {
+        if (!formState.title || !formState.dueDate || !formState.priority) {
             setAlertMessage({message:"Please fill all the fields.", type: "error"});
             // You can also show an alert or some UI feedback here
             return;
         }
+
+        const userId = JSON.parse(localStorage.getItem('authUser')).id;
         const newTask = {
-            task,
-            dueDate,
-            priority,
-            status: "Pending", // Default status for new tasks
-            createdDate: new Date().toISOString(), // Store the current date as createdDate
-            updatedDate: new Date().toISOString(), // Store the current date as updatedDate
-            id: Date.now(), // Unique ID for the task, can be replaced with a better ID generation method
+            title: formState.title,
+            due_date: formState.dueDate,
+            priority: formState.priority,
+            user_id: userId
         };
+
         console.log("New Task Added:", newTask);
         addTask(newTask);
-        // Here you would typically send the new task to your backend or state management
-        resetTaskForm();
-        if (action === "move") {
-            // Redirect to another page
-            navigate("/");
-            setAlertMessage({message:`Task(${task})added successfully!`, type: "success"});
-        } else if (action === "stay") {
-            setAlertMessage({message:`Task(${task})added successfully! You can continue adding more tasks.`, type: "success"});
-        }
     };
     return (
         <div className="p-6 shadow-md rounded-lg mx-auto max-w-7xl mt-8">
@@ -74,15 +90,16 @@ const AddTask = () => {
                         htmlFor="task-desc"
                         className="block text-sm font-medium text-gray-200"
                     >
-                        Task
+                        Title
                     </label>
                     <input
                         id="task-desc"
                         type="text"
-                        value={task}
-                        onChange={(e) => setTask(e.target.value)}
+                        name="title"
+                        value={formState.title}
+                        onChange={handleChange}
                         className="mt-1 block w-full outline-0 border-gray-300 pl-1 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                        placeholder="Enter task"
+                        placeholder="Enter Title"
                     />
                 </div>
                 <div>
@@ -95,10 +112,11 @@ const AddTask = () => {
                     <input
                         id="due-date"
                         type="date"
-                        value={dueDate}
-                        onChange={(e) => setDueDate(e.target.value)}
+                        name="dueDate"
+                        value={formState.dueDate}
+                        onChange={handleChange}
                         className={`mt-1 inline-block outline-0 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                            dueDate ? "" : "contrast-10"
+                            formReducer.dueDate ? "" : "contrast-10"
                         }`}
                     />
                 </div>
@@ -111,18 +129,19 @@ const AddTask = () => {
                     </label>
                     <select
                         id="priority"
-                        value={priority}
-                        onChange={(e) => setPriority(e.target.value)}
+                        value={formState.priority}
+                        name="priority"
+                        onChange={handleChange}
                         className={`mt-1 outline-0 block pr-2 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 placeholder:text-green-300 ${
-                            priority ? "" : "text-gray-600"
+                            formReducer.priority ? "" : "text-gray-600"
                         }`}
                     >
                         <option value="" disabled>
                             Select Priority
                         </option>
-                        <option value="High">High</option>
-                        <option value="Medium">Medium</option>
-                        <option value="Low">Low</option>
+                        <option value="3">High</option>
+                        <option value="2">Medium</option>
+                        <option value="1">Low</option>
                     </select>
                 </div>
                 <div className="mt-10 border-gray-500 border-t-1 pt-10 flex gap-4">
@@ -136,14 +155,18 @@ const AddTask = () => {
                     </Link>
                     <button
                         type="submit"
-                        onClick={() => setAction("move")}
+                        name="action"
+                        value="move"
+                        onClick={handleChange}
                         className="w-full whitespace-nowrap bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
                     >
                         Add Task
                     </button>
                     <button
                         type="submit"
-                        onClick={() => setAction("stay")}
+                        name="action"
+                        value="stay"
+                        onClick={handleChange}
                         className="w-full whitespace-nowrap bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
                     >
                         Add and Continue

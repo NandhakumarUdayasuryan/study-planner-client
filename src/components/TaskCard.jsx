@@ -1,24 +1,31 @@
-import { AlertContext } from "../contexts/alertContext";
 import { useContext } from "react";
+import axios from "axios";
+import { APIEndpoints } from "../utils/Constants.js"
+import { AlertContext } from "../contexts/AlertContext.jsx";
 
 function TaskCard({ allTasks, setAllTasks, tasks, title }) {
     const { setAlertMessage } = useContext(AlertContext);
     const updateField = (fieldValue, fieldName, affectedTask) => {
-        let updatedField = {};
-        const updatedTasks = allTasks.map((task) => {
-            if (task.id === affectedTask.id) {
-                updatedField[fieldName] = fieldValue;
-                return {
-                    ...task,
-                    ...updatedField,
-                    updatedDate: new Date().toISOString(),
-                };
-            }
-            return task;
+        // Update fieldName and fieldValue in the task
+        const updatedTasks = allTasks.map((task) =>
+            task.id === affectedTask.id
+            ? { ...task, [fieldName]: fieldValue }
+            : task
+        );
+        
+        // Optionally, update on server
+        console.log('patch', axios.patch)
+        axios
+        .patch(`${APIEndpoints.TASKS}/${affectedTask.id}`, {
+            fieldName,
+            fieldValue
+        }).then(() => {
+            setAlertMessage({message:`${fieldName.charAt(0).toUpperCase()}${fieldName.slice(1)} of (${affectedTask.title}) updated successfully!`, type: "success"});
+            setAllTasks(updatedTasks);
+        })
+        .catch(() => {
+            setAlertMessage({ message: `Failed to update ${fieldName} for (${affectedTask.title})`, type: "error" });
         });
-        localStorage.setItem("all-tasks", JSON.stringify(updatedTasks));
-        setAllTasks(updatedTasks);
-        setAlertMessage({message:`${fieldName.charAt(0).toUpperCase()}${fieldName.slice(1)} of (${affectedTask.task}) updated successfully!`, type: "success"});
     };
 
     const deleteTask = (affectedTask) => {
@@ -27,10 +34,14 @@ function TaskCard({ allTasks, setAllTasks, tasks, title }) {
                 "Are you sure you want to delete this task? This action cannot be undone."
             )
         ) {
-            const updatedTasks = allTasks.filter((task) => task.id !== affectedTask.id);
-            localStorage.setItem("all-tasks", JSON.stringify(updatedTasks));
-            setAllTasks(updatedTasks);
-            setAlertMessage({message:`Task(${affectedTask.task}) deleted successfully!`, type: "error"});
+            axios.delete(`${APIEndpoints.TASKS}/${affectedTask.id}`).then(()=> {
+                const updatedTasks = allTasks.filter((task) => task.id !== affectedTask.id);
+                setAllTasks(updatedTasks);
+                setAlertMessage({message:`Task(${affectedTask.task}) deleted successfully!`, type: "success"});
+            }).catch((e)=> {
+                setAlertMessage({message:`Task(${affectedTask.title}) not able to delete`, type: "error"});
+                console.error(e);
+            })
         }
     };
 
@@ -54,8 +65,8 @@ function TaskCard({ allTasks, setAllTasks, tasks, title }) {
                     >
                         <div className="text-gray-200">
                             <span className="">
-                                {`${task.task} (Due: ${new Date(
-                                    task.dueDate
+                                {`${task.title} (Due: ${new Date(
+                                    task.due_date
                                 ).toLocaleDateString("en-US", {
                                     year: "numeric",
                                     month: "long",
@@ -80,9 +91,9 @@ function TaskCard({ allTasks, setAllTasks, tasks, title }) {
                                     title="Update Task Priority"
                                     aria-label="Update Task Priority"
                                 >
-                                    <option value="Low">Low</option>
-                                    <option value="Medium">Medium</option>
-                                    <option value="High">High</option>
+                                    <option value="1">Low</option>
+                                    <option value="2">Medium</option>
+                                    <option value="3">High</option>
                                 </select>
                             </span>
                             <span>Status: </span>
@@ -99,10 +110,9 @@ function TaskCard({ allTasks, setAllTasks, tasks, title }) {
                                 title="Update Task Status"
                                 aria-label="Update Task Status"
                             >
-                                <option value="Complete">Complete</option>
-                                <option value="Pending">Pending</option>
+                                <option value="Done">Done</option>
                                 <option value="In Progress">In Progress</option>
-                                <option value="On Hold">On Hold</option>
+                                <option value="To Do">To Do</option>
                             </select>
                             <button
                                 className="ml-3 bg-pink-900 text-gray-200 px-2 py-1 rounded hover:opacity-90 cursor-pointer"
